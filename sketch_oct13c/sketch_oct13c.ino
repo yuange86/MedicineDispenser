@@ -23,6 +23,11 @@ void setup() {
   ButtonPressReleaseRecorder::SetButtonFunction(ButtonType::Up, [](int buttonType){
     if(ButtonPressReleaseRecorder::RunButtonOf(ButtonType::Up))
     {
+      if(LCD_Manager::IsInEditPage() && LCD_Page::GetDepth() == 6)
+      {
+        unsigned int page_ = LCD_Page::GetThisPageIndex();
+        LCD_Manager::RunInternalEditFunction(page_, 0);
+      }
       LCD_Manager::choice_index += 1;
       if(LCD_Manager::choice_index == CHOICE_COUNT)//Choice count ----------------------------------------------TODO()
         LCD_Manager::choice_index = 0;
@@ -34,6 +39,11 @@ void setup() {
   ButtonPressReleaseRecorder::SetButtonFunction(ButtonType::Down, [](int buttonType){
     if(ButtonPressReleaseRecorder::RunButtonOf(ButtonType::Down))
     {
+      if(LCD_Manager::IsInEditPage() && LCD_Page::GetDepth() == 6)
+      {
+        unsigned int page_ = LCD_Page::GetThisPageIndex();
+        LCD_Manager::RunInternalEditFunction(page_, 1);
+      }
       if(LCD_Manager::choice_index == 0)//Choice count ----------------------------------------------TODO()
         LCD_Manager::choice_index = CHOICE_COUNT;
       LCD_Manager::choice_index -= 1;
@@ -45,7 +55,7 @@ void setup() {
   ButtonPressReleaseRecorder::SetButtonFunction(ButtonType::Last, [](int buttonType){
     if(ButtonPressReleaseRecorder::RunButtonOf(ButtonType::Last))
     {
-      LCD_Manager::AppendPage(LCD_Manager::choice_index);
+      LCD_Manager::Back();
     }
     return true;
     });
@@ -53,7 +63,57 @@ void setup() {
   ButtonPressReleaseRecorder::SetButtonFunction(ButtonType::Enter, [](int buttonType){
     if(ButtonPressReleaseRecorder::RunButtonOf(ButtonType::Enter))
     {
-      LCD_Manager::Back();
+      if(LCD_Manager::IsInEditPage() && LCD_Page::GetDepth() == 5)
+      {
+        LCD_Manager::RunInternalEditFunction(2, LCD_Manager::choice_index);
+        return true;
+      }
+      if(LCD_Manager::IsInEditPage() && LCD_Page::GetDepth() == 6)
+      {
+        LCD_Manager::Clear();
+        LCD_Manager::FinalPage();
+        return true;
+      }
+      if(LCD_Page::GetDepth() == 8)
+      {
+        switch(LCD_Manager::choice_index)
+        {
+          case 0: {
+            DispenserConfiguration::BackToPastData();
+            while(LCD_Page::GetThisPageIndex() == 0)
+            {
+              LCD_Manager::Back();
+            }
+          } break;
+          case 1: {
+            DispenserConfiguration::SavePastData();
+            while(LCD_Page::GetThisPageIndex() == 0)
+            {
+              LCD_Manager::Back();
+            }
+          } break;
+          case 2: {
+            DispenserConfiguration::BackToPastData();
+            while(LCD_Page::GetThisPageIndex() == 0)
+            {
+              LCD_Manager::Back();
+            }
+          } break;
+          case 3: {
+            DispenserConfiguration::SavePastData();
+            while(LCD_Page::GetThisPageIndex() == 0)
+            {
+              LCD_Manager::Back();
+            }
+          } break;
+          case 4: {
+            DispenserConfiguration::BackToPastData();
+            LCD_Manager::ReInit();
+          } break;
+        }
+        return true;
+      }
+      LCD_Manager::AppendPage(LCD_Manager::choice_index);
     }
     return true;
     });

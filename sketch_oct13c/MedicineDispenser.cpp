@@ -132,6 +132,26 @@ void OneDayTime::SetTime(unsigned int time_by_seconds)
   m_time_by_seconds = time_by_seconds;
 }
 
+unsigned int OneDayTime::GetHour()
+{
+  return (m_time_by_seconds / 3600);
+}
+
+unsigned int OneDayTime::GetMinute()
+{
+  return (m_time_by_seconds % 3600) / 60;
+}
+
+void OneDayTime::AddAmount(unsigned int amount)
+{
+  m_time_by_seconds += amount;
+}
+
+void OneDayTime::SubAmount(unsigned int amount)
+{
+  m_time_by_seconds -= amount;
+}
+
 bool OneDayTime::GetEdited(unsigned int index)
 {
   return edited[index];
@@ -197,7 +217,7 @@ void LCD_Page::GoDeep(unsigned int next_index)
 {
   if(depth == 8)
     return;
-  indecies[depth] = next_index;
+  indecies[depth] = next_index+1;
   depth += 1;
 }
 
@@ -219,6 +239,11 @@ unsigned int LCD_Page::GetThisPageIndex()
 unsigned int* LCD_Page::GetThisPageList()
 {
   return (unsigned int*)indecies;
+}
+
+void LCD_Page::ToLast()
+{
+  depth = 8;
 }
 
 void LCD_Page::Clear()
@@ -245,6 +270,7 @@ unsigned int LCD_Manager::choice_index = 0;
 
 bool LCD_Manager::daytime_edited = false;
 bool LCD_Manager::mconfig_edited = false;
+bool LCD_Manager::inEditPage = false;
 
 OneDayTime& LCD_Manager::temp_daytime = DispenserConfiguration::GetDayTime(0);
 MConfig& LCD_Manager::temp_mconfig = temp_daytime.GetConfig(0);
@@ -280,8 +306,44 @@ void LCD_Manager::Init()
     0b00000
   };
 
+  uint8_t checkMark[8] = {
+    0b00000,
+    0b00001,
+    0b00001,
+    0b00010,
+    0b11010,
+    0b01010,
+    0b00100,
+    0b00000
+  };
+
+  uint8_t antiselectMark[8] = {
+    0b00000,
+    0b00010,
+    0b00110,
+    0b01110,
+    0b01110,
+    0b00110,
+    0b00010,
+    0b00000
+  };
+
+  uint8_t homeMark[8] = {
+    0b00100,
+    0b01110,
+    0b11111,
+    0b01110,
+    0b01010,
+    0b01010,
+    0b01110,
+    0b00000
+  };
+
   lcd.createChar(0, configMark);
   lcd.createChar(1, selectMark);
+  lcd.createChar(2, checkMark);
+  lcd.createChar(3, antiselectMark);
+  lcd.createChar(4, homeMark);
 
   //lcd.print("LCD_Manager init");
   //lcd.setCursor(0, 1);
@@ -335,6 +397,7 @@ void LCD_Manager::CreatePage(unsigned int deep, unsigned int index)
     case 3: ConfigPage(index); break;
     case 4: DaytimePage(index); break;
     case 5: MConfigPage(index); break;
+    case 6: MConfigEditPage(index); break;
   }
   SetCursor();
   lcd.cursor_on();
@@ -353,6 +416,7 @@ void LCD_Manager::ReInit()
   temp_daytime = DispenserConfiguration::GetDayTime(0);
   temp_mconfig = temp_daytime.GetConfig(0);
   LCD_Page::Clear();
+  CreatePage(0, 0);
 }
 
 void LCD_Manager::AppendPage(unsigned int index)
@@ -406,11 +470,18 @@ void LCD_Manager::SetCursor()
   LCD_Manager::Get().setCursor(LCD_Manager::GetChoiceLoc().x, LCD_Manager::GetChoiceLoc().y);
 }
 
+bool LCD_Manager::IsInEditPage()
+{
+  return inEditPage;
+}
+
+
 
 
 
 void LCD_Manager::StartPage(unsigned int index)
 {
+  inEditPage = false;
   switch(index)
   {
     case 0:
@@ -430,6 +501,7 @@ void LCD_Manager::StartPage(unsigned int index)
 
 void LCD_Manager::CommonInfoPage(unsigned int index)
 {
+  inEditPage = false;
   int edited_time = 0;
   for(int i = 0; i < 5; i++)
   {
@@ -453,6 +525,7 @@ void LCD_Manager::CommonInfoPage(unsigned int index)
 
 void LCD_Manager::ConfigPage(unsigned int index)
 {
+  inEditPage = false;
   switch(index)
   {
     case 0:
@@ -472,6 +545,7 @@ void LCD_Manager::ConfigPage(unsigned int index)
 
 void LCD_Manager::DaytimePage(unsigned int index)
 {
+  inEditPage = false;
   lcd.print("DayTime00"); lcd.print(index);
   if(daytime_edited)
   {
@@ -483,18 +557,55 @@ void LCD_Manager::DaytimePage(unsigned int index)
   }
   lcd.setCursor(15,0); lcd.printByte(0);
   lcd.setCursor(0, 1);
-  lcd.print("Code 1 2 3 4 5");
+  lcd.print("Code 1 2 3 4");
     
   choice_now[0] = {5, 1};
   choice_now[1] = {7, 1};
-  choice_now[2] = {9, 0};
+  choice_now[2] = {9, 1};
   choice_now[3] = {11, 1};
-  choice_now[4] = {13, 1};
+  choice_now[4] = {15, 0};
 }
 
 void LCD_Manager::MConfigPage(unsigned int index)
-{
+{ 
+  inEditPage = false;
   int daytime_index = *(LCD_Page::GetThisPageList()+3);
+  if(index == 4)
+  {
+    inEditPage = true;
+    lcd.print("DayTime");lcd.print(daytime_index); lcd.print(">"); lcd.print("Time");
+    lcd.setCursor(15, 0); lcd.printByte(4);
+    lcd.setCursor(5, 1);
+    int hour = temp_daytime.GetHour();
+    int minute = temp_daytime.GetMinute();
+    lcd.printByte(3);
+    if(hour < 10)
+    {
+      lcd.print("0"); lcd.print(hour);
+    }
+    else
+    {
+      lcd.print(hour);
+    }
+    lcd.print(":");
+    if(minute < 10)
+    {
+      lcd.print("0"); lcd.print(minute);
+    }
+    else
+    {
+      lcd.print(minute);
+    }
+    lcd.printByte(1);
+
+    choice_now[0] = {5, 1};
+    choice_now[1] = {7, 1};
+    choice_now[2] = {9, 1};
+    choice_now[3] = {11, 1};
+    choice_now[4] = {15, 0};
+    
+    return;
+  }
   lcd.print("DayTime"); lcd.print(daytime_index); lcd.print(">"); lcd.print(index+1);
   lcd.setCursor(15, 0); lcd.printByte(0);
   
@@ -503,17 +614,97 @@ void LCD_Manager::MConfigPage(unsigned int index)
   
   choice_now[0] = {1, 1};
   choice_now[1] = {8, 1};
-  choice_now[2] = {15, 0};
-  choice_now[3] = {15, 1};
-  choice_now[4] = {15, 1};
+  choice_now[2] = {1, 1};
+  choice_now[3] = {8, 1};
+  choice_now[4] = {15, 0};
 }
 
 void LCD_Manager::MConfigEditPage(unsigned int index)
 {
+  inEditPage = true;
+  int daytime_index = *(LCD_Page::GetThisPageList()+3);
+  int config_index = *(LCD_Page::GetThisPageList()+4);
+  lcd.print("DayTime"); lcd.print(daytime_index); lcd.print(">"); lcd.print(config_index+1);
+  lcd.setCursor(15, 0); lcd.printByte(0); lcd.setCursor(15, 1); lcd.printByte(2);
+
+  lcd.setCursor(0, 1);
   switch(index)
   {
-    //-------------------------------------------------------------------------------------TODO()
+    case 0: lcd.print("  code : "); lcd.printByte(1); lcd.print(temp_mconfig.code); break;
+    case 1: lcd.print(" count : "); lcd.printByte(1); lcd.print(temp_mconfig.count); break;
+    case 2: lcd.print("  code : "); lcd.printByte(1); lcd.print(temp_mconfig.code); break;
+    case 3: lcd.print(" count : "); lcd.printByte(1); lcd.print(temp_mconfig.count); break;
+    case 4: LCD_Manager::Back(); return;
   }
+
+  choice_now[0] = {9, 1};
+  choice_now[1] = {9, 1};
+  choice_now[2] = {9, 1};
+  choice_now[3] = {9, 1};
+  choice_now[4] = {9, 1};
+}
+
+void LCD_Manager::FinalPage()
+{
+  LCD_Page::ToLast();
+  lcd.print("Save the change"); lcd.printByte(4);
+  lcd.setCursor(0, 1); lcd.print("      X  "); lcd.printByte(2);
+  choice_now[0] = {6, 1};
+  choice_now[1] = {9, 1};
+  choice_now[2] = {6, 1};
+  choice_now[3] = {9, 1};
+  choice_now[4] = {15, 0};
+  SetCursor();
+
+}
+
+
+
+
+void LCD_Manager::RunInternalEditFunction(unsigned int page_index, unsigned int button_number)
+{
+  if(button_number == 4)
+  {
+    Back();
+    return;
+  }
+  switch(page_index)
+  {
+    case 2: // DayTime time setting
+    {
+      switch(button_number)
+      {
+        case 0: temp_daytime.SubAmount(1800); break;
+        case 1: temp_daytime.AddAmount(3600); break;
+        case 2: temp_daytime.AddAmount(60); break;
+        case 3: temp_daytime.AddAmount(1800); break;
+      }
+      UpdateInfo();
+      Clear();
+      CreatePage(LCD_Page::GetDepth(), LCD_Page::GetThisPageIndex());
+      choice_index = button_number;
+      SetCursor();
+    } return;
+    case 0: // code setting
+    {
+      switch(button_number)
+      {
+        case 0: temp_mconfig.code += 1; break; //increase
+        case 1: temp_mconfig.code -= 1; break; //decrease
+      }
+    } break;
+    case 1: // count setting
+    {
+      switch(button_number)
+      {
+        case 0: temp_mconfig.count += 1; break; //increase
+        case 1: temp_mconfig.count -= 1; break; //decrease
+      }
+    } break;
+  }
+  UpdateInfo();
+  Clear();
+  CreatePage(LCD_Page::GetDepth(), LCD_Page::GetThisPageIndex());
 }
 
 //_ButtonManager-------------------------------------------------------

@@ -74,6 +74,10 @@ public:
   MConfig& GetConfig(unsigned int index);
   void SetConfig(unsigned int index, MConfig _config);
   void SetTime(unsigned int time_by_seconds);
+  unsigned int GetHour();
+  unsigned int GetMinute();
+  void AddAmount(unsigned int amount);
+  void SubAmount(unsigned int amount);
   bool GetEdited(unsigned int index);
 private:
   MConfig configs[MAX_SIZE];
@@ -113,6 +117,7 @@ public:
   static unsigned int GetDepth();
   static void GoDeep(unsigned int next_index);
   static void GoUp();
+  static void ToLast();
   static unsigned int GetThisPageIndex();
   static unsigned int* GetThisPageList();
   static void Clear();
@@ -144,6 +149,11 @@ public:
 
   static unsigned int choice_index;
   static lcd_position GetChoiceLoc();
+
+  static void RunInternalEditFunction(unsigned int page_index, unsigned int button_number);
+
+  static bool IsInEditPage();
+  static void FinalPage();
 private:
   static void CreatePage(unsigned int deep, unsigned int index);
   
@@ -158,6 +168,7 @@ private:
   static MConfig& temp_mconfig;
   static bool daytime_edited;
   static bool mconfig_edited;
+  static bool inEditPage;
 
   static lcd_position choice_now[CHOICE_COUNT];
 
