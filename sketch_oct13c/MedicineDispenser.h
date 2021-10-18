@@ -82,7 +82,7 @@ public:
 private:
   MConfig configs[MAX_SIZE];
   bool edited[MAX_SIZE];
-  unsigned int m_time_by_seconds;
+  unsigned long m_time_by_seconds;
 };
 
 class DayTimeIterator {
@@ -249,6 +249,7 @@ public:
 };
 
 #include <Servo.h>
+
 class Motor {
 public:
   Motor();
@@ -266,6 +267,8 @@ private:
 class MotorManager {
 public:
   void Run();
+  void MotorSet(Motor a, Motor b, Motor c, Motor d);
+private:
   Motor m_motors[4];
 };
 

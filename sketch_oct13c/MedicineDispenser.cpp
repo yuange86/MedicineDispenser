@@ -227,14 +227,14 @@ bool DispenserConfiguration::GetEdited(unsigned int index)
 
 void DispenserConfiguration::GetEditedIterator(DayTimeIterator* iterator)
 {
-  while(true) {
-    static unsigned int index = 0;
+  unsigned int index = 0;
+  while(index != 5) {
     switch(GetEdited(index))
     {
-      case false: continue;
-      case true:  iterator->append(daytimes + index);
+      case false: break;
+      case true:  iterator->append(daytimes + index); break;
     }
-    index++;
+    index+=1;
   }
 }
 
@@ -321,7 +321,8 @@ void LCD_Manager::Init()
   choice_index = 0;
   
   lcd = LiquidCrystal_I2C(0x27, 16, 2);
-  lcd.init();
+  //lcd.init();
+  lcd.begin();
   lcd.backlight();
   lcd.cursor();
   lcd.clear();
@@ -725,7 +726,8 @@ void LCD_Manager::RunInternalEditFunction(unsigned int page_index, unsigned int 
       CreatePage(LCD_Page::GetDepth(), LCD_Page::GetThisPageIndex());
       choice_index = button_number;
       SetCursor();
-    } return;
+      return;
+    }
     case 0: // code setting
     {
       switch(button_number)
@@ -849,8 +851,8 @@ bool Time::Test(unsigned int hour_, unsigned int minute_)
 }
 
 
-Motor::Motor() { m_motor.attach(3); }
-Motor::Motor(unsigned data_pin) { m_motor.attach(data_pin); }
+Motor::Motor() { m_motor.attach(3); m_motor.write(0); }
+Motor::Motor(unsigned data_pin) { m_motor.attach(data_pin); m_motor.write(0); }
 Motor::~Motor() {}
 
 void Motor::execute()
@@ -874,6 +876,14 @@ void Motor::_run(unsigned int times)
   }
 }
 
+void MotorManager::MotorSet(Motor a, Motor b, Motor c, Motor d)
+{
+  m_motors[0] = a;
+  m_motors[1] = b;
+  m_motors[2] = c;
+  m_motors[3] = d;
+}
+
 void MotorManager::Run() 
 {
   DayTimeIterator iterator;
@@ -886,7 +896,7 @@ void MotorManager::Run()
       for(int i = 0; i < 5; i++) {
         switch(daytime_->GetConfig(i).code)
         {
-          case 0 : continue;
+          case 0 : break;
           case 1 : m_motors[0]._run(daytime_->GetConfig(i).count); break;
           case 2 : m_motors[1]._run(daytime_->GetConfig(i).count); break;
           case 3 : m_motors[2]._run(daytime_->GetConfig(i).count); break;
