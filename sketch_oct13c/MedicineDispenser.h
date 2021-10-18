@@ -85,6 +85,19 @@ private:
   unsigned int m_time_by_seconds;
 };
 
+class DayTimeIterator {
+public:
+  DayTimeIterator();
+  ~DayTimeIterator();
+
+  void append(OneDayTime* daytime);
+  OneDayTime* operator[](unsigned int index);
+  unsigned int GetSize();
+private:
+  OneDayTime* pointers[5];
+  unsigned int appended_size;
+};
+
 class DispenserConfiguration {
 public:
   static OneDayTime& GetDayTime(unsigned int index);
@@ -93,6 +106,8 @@ public:
   static void BackToPastData();
 
   static bool GetEdited(unsigned int index);
+
+  static void GetEditedIterator(DayTimeIterator* iterator);
 
   static void Delete(unsigned int index);
 private:
@@ -186,6 +201,73 @@ public:
   void onEvent();
 };
 
+
+
+
+
+
+#include <TimeLib.h>
+#define YEAR__ (\
+(__DATE__[7] - '0') * 1000 + \
+(__DATE__[8] - '0') * 100 + \
+(__DATE__[9] - '0') * 10 + \
+(__DATE__[10] - '0') )
+
+#define MONTH_IS(str) (\
+__DATE__[0] == str[0] &&\
+__DATE__[1] == str[1] &&\
+__DATE__[2] == str[2])
+
+#define MONTH__ (\
+MONTH_IS("Jan") ? 1 : \
+MONTH_IS("Feb") ? 2 : \
+MONTH_IS("Mar") ? 3 : \
+MONTH_IS("Apr") ? 4 : \
+MONTH_IS("May") ? 5 : \
+MONTH_IS("Jun") ? 6 : \
+MONTH_IS("Jul") ? 7 : \
+MONTH_IS("Aug") ? 8 : \
+MONTH_IS("Sep") ? 9 : \
+MONTH_IS("Oct") ? 10 : \
+MONTH_IS("Nov") ? 11 : \
+MONTH_IS("Dec") ? 12 : 0)
+
+#define DAY__ \
+    ( \
+        ((__DATE__[4] >= '0') ? (__DATE__[4] - '0') * 10 : 0) + \
+        (__DATE__[5] - '0') \
+    )
+
+#define HOUR__ ((__TIME__[0] - '0') * 10 + __TIME__[1] - '0')
+#define MIN__  ((__TIME__[3] - '0') * 10 + __TIME__[4] - '0')
+#define SEC__  ((__TIME__[6] - '0') * 10 + __TIME__[7] - '0')
+
+class Time {
+public:
+  static void Init();
+  static bool Test(unsigned int hour_, unsigned int minute_); 
+};
+
+#include <Servo.h>
+class Motor {
+public:
+  Motor();
+  Motor(unsigned int data_pin);
+  ~Motor();
+
+  void execute();
+  void back();
+  void _run(unsigned int times);
+private:
+  Servo m_motor;
+};
+
+
+class MotorManager {
+public:
+  void Run();
+  Motor m_motors[4];
+};
 
 
 #endif

@@ -157,6 +157,34 @@ bool OneDayTime::GetEdited(unsigned int index)
   return edited[index];
 }
 
+//_DayTimeIterator----------------------------------------------------------
+
+DayTimeIterator::DayTimeIterator()
+{
+  appended_size = 0;
+}
+
+DayTimeIterator::~DayTimeIterator()
+{
+  
+}
+
+void DayTimeIterator::append(OneDayTime* daytime)
+{
+  pointers[appended_size] = daytime;
+  appended_size += 1;
+}
+
+OneDayTime* DayTimeIterator::operator[](unsigned int index)
+{
+  return pointers[index];
+}
+
+unsigned int DayTimeIterator::GetSize()
+{
+  return appended_size;
+}
+
 //_DispenserConfiguration----------------------------------------------
 
 OneDayTime DispenserConfiguration::daytimes[5] = { OneDayTime(), OneDayTime(), OneDayTime(), OneDayTime(), OneDayTime() };
@@ -195,6 +223,19 @@ void DispenserConfiguration::BackToPastData()
 bool DispenserConfiguration::GetEdited(unsigned int index)
 {
   return edited[index];
+}
+
+void DispenserConfiguration::GetEditedIterator(DayTimeIterator* iterator)
+{
+  while(true) {
+    static unsigned int index = 0;
+    switch(GetEdited(index))
+    {
+      case false: continue;
+      case true:  iterator->append(daytimes + index);
+    }
+    index++;
+  }
 }
 
 void DispenserConfiguration::Delete(unsigned int index)
@@ -790,4 +831,67 @@ void ButtonManager::onEvent()
   }
   
   ButtonPressReleaseRecorder::Run();
+}
+
+
+
+
+
+
+void Time::Init()
+{
+  setTime(HOUR__, MIN__, SEC__, DAY__, MONTH__, YEAR__);
+}
+
+bool Time::Test(unsigned int hour_, unsigned int minute_)
+{
+  return hour() == hour_ && minute() == minute_;
+}
+
+
+Motor::Motor() { m_motor.attach(3); }
+Motor::Motor(unsigned data_pin) { m_motor.attach(data_pin); }
+Motor::~Motor() {}
+
+void Motor::execute()
+{
+  m_motor.write(90);
+}
+
+void Motor::back()
+{
+  m_motor.write(0);
+}
+
+void Motor::_run(unsigned int times)
+{
+  for(int i = 0; i < times; i++)
+  {
+    execute();
+    delay(60);
+    back();
+    delay(60);
+  }
+}
+
+void MotorManager::Run() 
+{
+  DayTimeIterator iterator;
+  DispenserConfiguration::GetEditedIterator(&iterator);
+  for(int i = 0; i < iterator.GetSize(); i++)
+  {
+    OneDayTime* daytime_ = iterator[i];
+    if(Time::Test(daytime_->GetHour(), daytime_->GetMinute()))
+    {
+      for(int i = 0; i < 5; i++) {
+        switch(daytime_->GetConfig(i).code)
+        {
+          case 0 : continue;
+          case 1 : m_motors[0]._run(daytime_->GetConfig(i).count); break;
+          case 2 : m_motors[1]._run(daytime_->GetConfig(i).count); break;
+          case 3 : m_motors[2]._run(daytime_->GetConfig(i).count); break;
+          case 4 : m_motors[3]._run(daytime_->GetConfig(i).count); break;        }
+      }
+    }
+  }
 }

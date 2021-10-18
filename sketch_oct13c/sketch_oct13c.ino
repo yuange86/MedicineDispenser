@@ -9,7 +9,13 @@
 #define Button_Enter    5
 #define Button_Reset    6
 
+#define Motor_1 7
+#define Motor_2 8
+#define Motor_3 9
+#define Motor_4 10
+
 ButtonManager manager(Button_Up, Button_Down, Button_Last, Button_Enter, Button_Reset);
+MotorManager  motors();
 
 void setup() {
   Serial.begin(9600);
@@ -127,6 +133,10 @@ void setup() {
     });
 
   manager.Init();
+  motors.m_motors[0] = Motor(Motor_1);
+  motors.m_motors[1] = Motor(Motor_2);              // TODO
+  motors.m_motors[2] = Motor(Motor_3);
+  motors.m_motors[3] = Motor(Motor_4);
 }
 
 
@@ -134,5 +144,6 @@ void setup() {
 void loop() {
 
   manager.onEvent();
+  motors._run();
   
 }
